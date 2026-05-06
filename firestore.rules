@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['color', 'createdAt']) 
+        && data.color is string && data.color.size() <= 20
+        && data.createdAt is number
+        && (data.get('name', 'none') is string) && (data.get('name', 'none').size() <= 50);
+    }
+    
+    function isValidPost(data) {
+      return data.keys().hasAll(['authorId', 'authorColor', 'content', 'likes', 'createdAt'])
+        && data.authorId == request.auth.uid
+        && data.authorColor is string && data.authorColor.size() <= 20
+        && data.content is string && data.content.size() <= 150
+        && data.likes is number
+        && data.createdAt is number
+        && (data.get('authorName', 'none') is string) && (data.get('authorName', 'none').size() <= 50)
+        && (data.get('replyToId', 'none') is string) && (data.get('replyToId', 'none').size() <= 128)
+        && (data.get('replyToAuthor', 'none') is string) && (data.get('replyToAuthor', 'none').size() <= 128);
+    }
+
+    function isValidLike(data) {
+      return data.keys().hasAll(['userId', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.createdAt is number;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['fromId', 'fromColor', 'toId', 'content', 'createdAt', 'read'])
+        && data.fromId == request.auth.uid
+        && data.fromColor is string && data.fromColor.size() <= 20
+        && data.toId is string && data.toId.size() <= 128
+        && data.content is string && data.content.size() <= 1000
+        && data.read is bool
+        && data.createdAt is number
+        && (data.get('fromName', 'none') is string) && (data.get('fromName', 'none').size() <= 50);
+    }
+
+    function isValidVoiceNote(data) {
+      return data.keys().hasAll(['authorId', 'authorColor', 'audioUrl', 'createdAt'])
+        && data.authorId == request.auth.uid
+        && data.authorColor is string && data.authorColor.size() <= 20
+        && data.audioUrl is string && data.audioUrl.size() <= 10485760
+        && data.createdAt is number
+        && (data.get('authorName', 'none') is string) && (data.get('authorName', 'none').size() <= 50);
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+    }
+
+    match /posts/{postId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(postId) && isValidPost(incoming()) && incoming().likes == 0;
+      allow update: if isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['likes']) && incoming().likes is number && (incoming().likes == existing().likes + 1 || incoming().likes == existing().likes - 1 || incoming().likes == existing().likes);
+      
+      match /likes/{userId} {
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidLike(incoming());
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && (existing().fromId == request.auth.uid || existing().toId == request.auth.uid);
+      allow list: if isSignedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(messageId) && isValidMessage(incoming());
+      allow update: if isSignedIn() && existing().toId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['read']) && incoming().read == true;
+    }
+
+    match /voiceNotes/{voiceNoteId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(voiceNoteId) && isValidVoiceNote(incoming());
+    }
+  }
+}

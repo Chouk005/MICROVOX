@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with their generated identity.",
+      "type": "object",
+      "properties": {
+        "color": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["color", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A 100 character short text post.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorColor": { "type": "string" },
+        "content": { "type": "string" },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "replyToId": { "type": "string" },
+        "replyToAuthor": { "type": "string" }
+      },
+      "required": ["authorId", "authorColor", "content", "likes", "createdAt"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "A like on a post.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "PrivateMessage": {
+      "title": "PrivateMessage",
+      "description": "A private message between two users.",
+      "type": "object",
+      "properties": {
+        "fromId": { "type": "string" },
+        "fromName": { "type": "string" },
+        "fromColor": { "type": "string" },
+        "toId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["fromId", "fromColor", "toId", "content", "createdAt", "read"]
+    },
+    "VoiceNote": {
+      "title": "VoiceNote",
+      "description": "A 3-second voice note.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorColor": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["authorId", "authorColor", "audioUrl", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile containing identity information."
+    },
+    "posts/{postId}": {
+      "schema": "Post",
+      "description": "Public posts broadcasted by users."
+    },
+    "posts/{postId}/likes/{userId}": {
+      "schema": "Like",
+      "description": "Tracks users who liked a post."
+    },
+    "messages/{messageId}": {
+      "schema": "PrivateMessage",
+      "description": "Private messages exchanged between users."
+    },
+    "voiceNotes/{voiceNoteId}": {
+      "schema": "VoiceNote",
+      "description": "Public voice notes recorded by users."
+    }
+  }
+}

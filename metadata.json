@@ -1,0 +1,6 @@
+{
+  "name": "MicroVox",
+  "description": "Una red social anónima minimalista con mensajes de 100 caracteres. Ahora con mensajes de voz de 3 segundos.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": []
+}
